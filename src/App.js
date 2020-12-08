@@ -1,37 +1,37 @@
 import LoginForm from "./component/login-form/login-form.component";
 import SignUpForm from "./component/sign-up-form/sign-up-form.component";
 import Home from "./component/home.component";
+import Navbar from "./component/navbar/navbar.component";
+
+import { connect } from "react-redux";
+import { setCurrentUser } from "./redux/user/user.actions";
 import { auth, createUserProfileDocument } from "./firebase/firebase.utils";
-import { Route, BrowserRouter, Switch, Link } from "react-router-dom";
+import { Route, BrowserRouter, Switch, Redirect } from "react-router-dom";
+
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const { Component } = require("react");
 
 class App extends Component {
-  constructor() {
-    super();
-    this.state = {
-      currentUser: null,
-    };
-  }
-
   unsubscribeFromAuth = null;
 
   componentDidMount() {
+    const { setCurrentUser } = this.props;
+
     this.unsubscribeFromAuth = auth.onAuthStateChanged(async (userAuth) => {
       if (userAuth) {
         const userRef = await createUserProfileDocument(userAuth);
 
-        userRef.onSnapshot((Snapshot) => {
-          this.setState({
+        userRef.onSnapshot((snapshot) => {
+          setCurrentUser({
             currentUser: {
-              id: Snapshot.id,
-              ...Snapshot.data(),
+              id: snapshot.id,
+              ...snapshot.data(),
             },
           });
         });
       } else {
-        this.setState({ currentUser: userAuth });
+        setCurrentUser(userAuth);
       }
     });
   }
@@ -43,24 +43,35 @@ class App extends Component {
   render() {
     return (
       <BrowserRouter>
-        <div>
-          <Link to="/">home</Link>
-          <Link to="/login">login</Link>
-          <Link to="/sign-up">signup</Link>
-          {this.state.currentUser ? (
-            <button onClick={() => auth.signOut()}>Log Out</button>
-          ) : (
-            <p>no user</p>
-          )}
-        </div>
+        <Navbar />
         <Switch>
           <Route exact path="/" component={Home} />
-          <Route path="/login" component={LoginForm} />
-          <Route path="/sign-up" component={SignUpForm} />
+          <Route
+            exact
+            path="/login"
+            render={() =>
+              this.props.currentUser ? <Redirect to="/" /> : <LoginForm />
+            }
+          />
+          <Route
+            exact
+            path="/sign-up"
+            render={() =>
+              this.props.currentUser ? <Redirect to="/" /> : <SignUpForm />
+            }
+          />
         </Switch>
       </BrowserRouter>
     );
   }
 }
 
-export default App;
+const mapStateToProps = ({ user }) => ({
+  currentUser: user.currentUser,
+});
+
+const mapDispatchToProps = (dispatch) => ({
+  setCurrentUser: (user) => dispatch(setCurrentUser(user)),
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(App);
