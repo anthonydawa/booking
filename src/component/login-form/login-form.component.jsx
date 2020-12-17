@@ -37,7 +37,7 @@ class LoginForm extends Component {
 
     return (
       <div className="login-form">
-        <div className="card mx-auto login-card bg-gradient-light">
+        <div className="card mx-auto login-card bg-light">
           <div className="card-body my-5">
             <form onSubmit={this.handleSubmit}>
               <div className="form-group">

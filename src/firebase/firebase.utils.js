@@ -12,33 +12,48 @@ const firebaseConfig = {
   measurementId: "G-C3P33FFBGK",
 };
 
-export const createUserProfileDocument = async (userAuth, additionalData ) => {
+export const createUserProfileDocument = async (userAuth, additionalData) => {
   if (!userAuth) return;
 
-  const userRef = firestore.doc(`users/${userAuth.uid}`)
+  const userRef = firestore.doc(`users/${userAuth.uid}`);
 
   const snapShot = await userRef.get();
 
-  if(!snapShot.exists){
-    const {displayName, email} = userAuth;
+  if (!snapShot.exists) {
+    const { displayName, email } = userAuth;
+    const bookings = [];
     const createdAt = new Date();
 
-    try{
+    try {
       await userRef.set({
         displayName,
         email,
         createdAt,
-        ...additionalData
-      })
+        bookings,
+        ...additionalData,
+      });
     } catch (error) {
-      console.log('error', error.message)
+      console.log("error", error.message);
     }
   }
 
   return userRef;
+};
 
-}
+export const addBookingToUser = async (userId, bookingId) => {
+  const userRef = firestore.doc(`/users/${userId}`);
+  const userSnapshot = userRef.get();
 
+  if ((await userSnapshot).exists) {
+    try {
+      await userRef.update({
+        bookings: firebase.firestore.FieldValue.arrayUnion(bookingId),
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+};
 
 
 
@@ -56,3 +71,4 @@ googleProvider.setCustomParameters({ prompt: "select_account" });
 export const signInWithGoogle = () => auth.signInWithPopup(googleProvider);
 
 export default firebase;
+
